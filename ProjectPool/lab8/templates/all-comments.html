@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Comments{% endblock %}
+
+{% block content %}
+    <h1>Comments</h1>
+    <table class="table table-striped table-hover table-sm">
+        <thead>
+        <tr>
+            <th>Email</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Comment</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for comment in comments %}
+            <tr>
+                <td>{{ comment.email }}</td>
+                <td>{{ comment.first_name }}</td>
+                <td>{{ comment.last_name }}</td>
+                <td>{{ comment.body }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+     <p>
+        <a class="btn btn-primary" href="/transfer">Transfer Funds</a>
+    </p>
+{% endblock %}

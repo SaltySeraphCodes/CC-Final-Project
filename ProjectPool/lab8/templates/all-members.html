@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}All Members{% endblock %}
+
+{% block content %}
+    <h1>All the Members</h1>
+    <table class="table table-striped table-hover table-sm">
+        <thead>
+        <tr>
+            <th>E-mail</th>
+            <th>First</th>
+            <th>Last</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for member in members %}
+            <tr>
+                <td>{{ member.email }}</td>
+                <td>{{ member['first_name'] }}</td>
+                <td>{{ member['last_name'] }}</td>
+                <td>
+                    <a class="btn btn-sm btn-outline-secondary"
+                       href="{{ url_for('member_details', email=member.email) }}">Details</a>
+                    <a class="btn btn-sm btn-outline-secondary"
+                       href="{{ url_for('member_comments', email=member.email) }}">Comments</a>
+                    <a class="btn btn-sm btn-outline-secondary"
+                       href="{{ url_for('update_member', email=member.email) }}">Update</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="4">No members</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

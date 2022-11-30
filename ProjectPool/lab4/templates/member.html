@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block pageTitle %}
+    Member page
+{%  endblock %}
+
+{% block pageContent %}
+    <h2> Welcome {{ session.user.name }} </h2>
+
+    <p> Check out the  <a href="/memberarea">Best website on earth!</a> </p>
+{% endblock %}

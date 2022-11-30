@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block pageTitle %}
+            Sessions
+            {% endblock %}
+    </title>
+</head>
+<body>
+<h1>Bottom Text</h1>
+{% block pageContent %}
+    File not found
+{% endblock %}
+
+<hr>
+<dl>
+    {% for key in session.user %}
+        <dt>{{ key }}</dt>
+        <dd>{{ session.user[key].name }}</dd>
+    {% endfor %}
+</dl>
+</body>
+</html>

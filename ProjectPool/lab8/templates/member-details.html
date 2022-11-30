@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Member {{ member.email }}{% endblock %}
+
+{% block content %}
+    <h1>Member {{ member.email }}</h1>
+    <table class="table table-striped table-hover table-sm">
+        <tbody>
+        <tr>
+            <th>E-mail</th>
+            <td>{{ member.email }}</td>
+        </tr>
+        <tr>
+            <th>First Name</th>
+            <td>{{ member.first_name }}</td>
+        </tr>
+        <tr>
+            <th>Last Name</th>
+            <td>{{ member.last_name }}</td>
+        </tr>
+        </tbody>
+    </table>
+{% endblock %}
