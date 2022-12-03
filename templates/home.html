@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Account</title>
+    <link rel="stylesheet" href="../static/style.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <h1>Home</h1>
+    </div>
+    <br>
+    <div class="row">Logged in : {{session.username}} | <a href="{{ url_for('logout') }}"> Logout</a></div>
+    <br><br>
+</div>
+</body>
+</html>
