@@ -7,8 +7,11 @@
 </style>
 	{# raw #}
 	<div class=container chart_holder>
-		<h2> Household Trend </h2>
+		<h2> Household Trends</h2>
 		<div id="chart1"> </div>
+		<br>
+		<h2> Yearly Category Trend</h2>
+		<div id="chart2"> </div>
 	<script>
 	// Helper Functions ---------------------
 	var datetime = {'datetime':function(year,month,day,hour,minute){
@@ -23,8 +26,15 @@
 		return converted_date;
 	}
 
-	function getMonthYear(d){
+	function getMonthYear(d){ // gets purchase month and year
 		let month = d['PURCHASE'] - 1;
+		let year = d['YEAR']
+		date = new Date(year, month)
+		return date;
+	}
+
+
+	function getYear(d){ // only takes year
 		let year = d['YEAR']
 		date = new Date(year, month)
 		return date;
@@ -51,132 +61,146 @@
 	function increaseXScale(ammount,interval){
 		console.lg("increasing xScale by ",ammount,interval)
 	}
-	///-----------------------------
-	var chartList = ['chart1'];
-	var data = {{data|safe}};
-    console.log("Got data",data)
-	
-	var yScale 
-	var xAxisScale
-	var line_indicators = [];
-	var ch_width = 600;
-	var ch_height = 400;
-	var ch_marginLeft = 10;
-	var ch_marginRight = 0;
-	var ch_marginTop = 10;
-	var ch_marginBottom = 10;
-	var bar_width =15;
-	var bar_padding = 3;
-	var transform = d3.zoomIdentity;
-	var yZoom = 0.000;
-	var padding = 30;
-	var x1Zoom = 0;
-	var x2Zoom = 5;
-
-
+	///------------------HOUSEHOLD TREND CHART-----------
+	var chartID = 'chart1';
+	var data = {{timeData|safe}};
+    console.log("HOusehold data",data)
 	// RENEWED STUFF since old stuff was not working
-	const margin = 34;
-    const width = 1000 - (2 * margin);
-    const height = 400 - (2 * margin);
+	var margin = 34;
+    var width = 1000 - (2 * margin);
+    var height = 400 - (2 * margin);
+	var dynamicElements = [];
+	var start_date = d3.min(data, function(d){return getMonthYear(d)})
+	var end_date = d3.max(data, function(d){return getMonthYear(d)})
 
-	for (i in chartList){
-		chartID = chartList[i];
-		draw_chart(chartID,data);
-	}
-    // take data and parseDate
-    /*temperatures.forEach(function(d) {
-        d.onDate = parseDate(d.onDate);
-        console.log(d.onDate)
-        return d;
-        })
-    */
-	function draw_chart(chartID,data){
-        //Load any selected specific actions here
-		draw_chart_data(chartID,data);
-	}
-	function draw_chart_data(chartID,data){
-		var dynamicElements = [];
-		var start_date = getMonthYear(data[0])
-		var end_date = getMonthYear(data[data.length-1])
-		
-		start_date = d3.min(data, function(d){return getMonthYear(d)})
-		end_date = d3.max(data, function(d){return getMonthYear(d)})
-		
-		yScale = d3.scaleLinear() // TODO: Get max of all stuff
-			.range([height,60])
-			.domain([0,d3.max(data, function(d){return d['TOTAL']})])//d3.min(data, function(d) {return d['TOTAL']})-yZoom])
-		
-		xScale = d3.scaleTime()
-			.range([0,width -60])
-			.domain([start_date,end_date])
-		//.padding(0.2)
-		
+	yScale = d3.scaleLinear() // TODO: Get max of all stuff
+		.range([height,60])
+		.domain([0,d3.max(data, function(d){return d['TOTAL']})])//d3.min(data, function(d) {return d['TOTAL']})-yZoom])
+	xScale = d3.scaleTime()
+		.range([0,width -60])
+		.domain([start_date,end_date]) // possibly pad by a week?
+	//.padding(0.2)
 	
-		var chart_area = d3.select("#"+chartID).append("svg")
-			.attr('width', width)
-			.attr('height',height )
-			.style("background-color", 'LightGray');
+	var chart_area = d3.select("#"+chartID).append("svg")
+		.attr('width', width)
+		.attr('height',height )
+		.style("background-color", 'LightGray');
+		
+		var interactive_chart = chart_area.append('g')
+		.attr('transform', `translate(${margin}, ${margin})`);
+		//.attr("transform", "translate(" + margin + ","+margin + ")") // can use the other one
+	
+
+	interactive_chart.append('g')
+		.attr('transform', `translate(0, ${height - 60})`)
+		.attr("class", "axis")
+		.call(d3.axisBottom(xScale));
+	
+	interactive_chart.append("g")
+		.attr("class", "axis")
+		.attr('transform', `translate(0, -60)`)
+		.call(d3.axisLeft(yScale));
 			
-			var interactive_chart = chart_area.append('g')
-			.attr('transform', `translate(${margin}, ${margin})`);
-			//.attr("transform", "translate(" + margin + ","+margin + ")") // can use the other one
+	// Drawing the actual chart
+	console.log("drawing")
+	var OC_rects = interactive_chart.selectAll(".bars").data(data).enter().append("rect");
+	OC_rects.attr("id","bar")
+	.attr("class","bars")
+	.attr("x", function(d,i) {
+			return xz(getMonthYear(d))
+	})
+	.attr("y", function(d,i){
+			yPos = d['TOTAL'] //d['TOTAL']; // start up top and extend down
+		return yz(yPos) - 60
+	})
+		.attr("width",function(d,i){
+			return bar_width;
+	})
+	.attr("height", function(d,i){
+			var yDist;
+			yDist = d['TOTAL'];
+			return  height - yz(yDist);
+	})
+	.attr("fill",function(d,i){
+		fillColor = "#FF4900"
+		return fillColor;
+	})
+	.attr("stroke", function(d,i){
+		var strokeColor = "black";
+		return strokeColor
+	})
+	.attr("stroke-width",1)
+
+
+	///------------------Category TREND CHART-----------
+	var chartID = 'chart2';
+	var data = {{catData|safe}};
+    console.log("Category data",data)
+	// RENEWED STUFF since old stuff was not working
+	var margin = 34;
+    var width = 1000 - (2 * margin);
+    var height = 400 - (2 * margin);
+	var dynamicElements = [];
+	var start_date = d3.min(data, function(d){return getYear(d)})
+	var end_date = d3.max(data, function(d){return getYear(d)})
+
+	yScale = d3.scaleLinear() // TODO: Get max of all stuff
+		.range([height,60])
+		.domain([0,d3.max(data, function(d){return d['TOTAL']})])//d3.min(data, function(d) {return d['TOTAL']})-yZoom])
+	xScale = d3.scaleTime()
+		.range([0,width -60])
+		.domain([start_date,end_date]) // possibly pad by a week?
+	//.padding(0.2)
+	
+	var chart_area = d3.select("#"+chartID).append("svg")
+		.attr('width', width)
+		.attr('height',height )
+		.style("background-color", 'LightGray');
 		
+		var interactive_chart = chart_area.append('g')
+		.attr('transform', `translate(${margin}, ${margin})`);
+		//.attr("transform", "translate(" + margin + ","+margin + ")") // can use the other one
+	
 
-		interactive_chart.append('g')
-			.attr('transform', `translate(0, ${height - 60})`)
-			.attr("class", "axis")
-			.call(d3.axisBottom(xScale));
-		
-		interactive_chart.append("g")
-			.attr("class", "axis")
-			.attr('transform', `translate(0, -60)`)
-
-			.call(d3.axisLeft(yScale));
-			     
-		
-		
-
-		// Drawing the actual chart
-	    drawData(xScale,yScale);
-		function drawData(xz,yz){
-			console.log("drawing")
-		    var OC_rects = interactive_chart.selectAll(".bars").data(data).enter().append("rect");
-			OC_rects.attr("id","bar")
-			.attr("class","bars")
-			.attr("x", function(d,i) {
-					monthYear = getMonthYear(d)
-					//console.log("pre",my_width/2,monthYear,xz(monthYear))
-					//console.log("draw data x",xz(getMonthYear(d)) - (my_width/2))
-					return xz(getMonthYear(d))
-			})
-			.attr("y", function(d,i){
-					yPos = d['TOTAL'] //d['TOTAL']; // start up top and extend down
-					//console.log(yPos,d['TOTAL'])
-				return yz(yPos) - 60
-			})
-		        .attr("width",function(d,i){
-					my_width = bar_width
-					return bar_width;
-			})
-			.attr("height", function(d,i){
-					var yDist;
-					yDist = d['TOTAL'];
-					//console.log(yDist)
-					return  height - yz(yDist);
-			})
-			.attr("fill",function(d,i){
-				fillColor = "#FF4900"
-				return fillColor;
-			})
-			.attr("stroke", function(d,i){
-                var strokeColor = "black";
-				return strokeColor
-			})
-			.attr("stroke-width",2)
-
-		}
-	}
-
+	interactive_chart.append('g')
+		.attr('transform', `translate(0, ${height - 60})`)
+		.attr("class", "axis")
+		.call(d3.axisBottom(xScale));
+	
+	interactive_chart.append("g")
+		.attr("class", "axis")
+		.attr('transform', `translate(0, -60)`)
+		.call(d3.axisLeft(yScale));
+			
+	// Drawing the actual chart
+	console.log("drawing")
+	var OC_rects = interactive_chart.selectAll(".bars").data(data).enter().append("rect");
+	OC_rects.attr("id","bar")
+	.attr("class","bars")
+	.attr("x", function(d,i) {
+			return xz(getMonthYear(d))
+	})
+	.attr("y", function(d,i){
+			yPos = d['TOTAL'] //d['TOTAL']; // start up top and extend down
+		return yz(yPos) - 60
+	})
+	.attr("width",function(d,i){
+		return bar_width;
+	})
+	.attr("height", function(d,i){
+			var yDist;
+			yDist = d['TOTAL'];
+			return  height - yz(yDist);
+	})
+	.attr("fill",function(d,i){
+		fillColor = "#FF4900"
+		return fillColor;
+	})
+	.attr("stroke", function(d,i){
+		var strokeColor = "black";
+		return strokeColor
+	})
+	.attr("stroke-width",1)
 		      
 	</script>
 
