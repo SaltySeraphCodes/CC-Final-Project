@@ -1,0 +1,311 @@
+{% extends 'base2.html' %}
+
+{% block content %}
+<br>
+<style>
+
+.axis path,
+.axis line {
+    stroke: white;
+    stroke-opacity: 0.7;
+    shape-rendering: geometricPrecision ;
+}
+
+.axis text {
+    font-family: sans-serif;
+    font-size: 11px;
+}
+
+.chart text {
+  fill: white;
+  font: 10px sans-serif;
+  text-anchor: end;
+}
+
+.slidecontainer {
+  width: 30%; /* Width of the outside container */
+}
+
+.slider {
+  -webkit-appearance: none;  /* Override default CSS styles */
+  appearance: none;
+  width: 100%; /* Full-width */
+  height: 25px; /* Specified height */
+  background: #d3d3d3; /* Grey background */
+  outline: none; /* Remove outline */
+  opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
+  -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+  transition: opacity .2s;
+}
+
+/* Mouse-over effects */
+.slider:hover {
+  opacity: 1; /* Fully shown on mouse-over */
+}
+
+/* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none; /* Override default look */
+  appearance: none;
+  width: 25px; /* Set a specific slider handle width */
+  height: 25px; /* Slider handle height */
+  background: #4CAF50; /* Green background */
+  cursor: pointer; /* Cursor on hover */
+}
+
+.slider::-moz-range-thumb {
+  width: 25px; /* Set a specific slider handle width */
+  height: 25px; /* Slider handle height */
+  background: #4CAF50; /* Green background */
+  cursor: pointer; /* Cursor on hover */
+}
+
+</style>
+	{# raw #}
+	<script>
+	// Helper Functions ---------------------
+	var datetime = {'datetime':function(year,month,day,hour,minute){
+			newDay =  new Date(year,month,day,hour,minute);
+			return newDay;
+			}
+	};
+
+	function epochToDate(epochStr){
+		var epochInt= parseInt(epochStr,10);
+		converted_date = new Date(epochInt);
+		return converted_date;
+	}
+
+	function getMonthYear(d){
+		let month = d['PURCHASE'] - 1;
+		let year = d['YEAR']
+		date = new Date(year, month)
+		return date;
+	}
+
+	function addDays(date, days) {
+	  var result = new Date(date);
+	  result.setDate(result.getDate() + days);
+	  return result;
+	}
+
+	function addHours(date, hours) {
+	  var result = new Date(date);
+	  result = new Date(result.getTime() + (hours*60*60000));
+	  return result;
+	}
+	
+	function addMinutes(date, minutes) {
+	  var result = new Date(date);
+	  result = new Date(result.getTime() + (minutes*60000));
+	  return result;
+	}
+
+	function increaseXScale(ammount,interval){
+		console.lg("increasing xScale by ",ammount,interval)
+	}
+	///-----------------------------
+	var chartList = ['chart1'];
+	var data = {{data|safe}};
+    console.log("Got data",data)
+	
+	var yScale 
+	var xAxisScale
+	var line_indicators = [];
+	var ch_width = 1000;
+	var ch_height = 400;
+	var ch_marginLeft = 30;
+	var ch_marginRight = 30;
+	var ch_marginTop = 20;
+	var ch_marginBottom = 20;
+	var bar_width =15;
+	var bar_padding = 3;
+	var transform = d3.zoomIdentity;
+	var yZoom = 0.000;
+	var padding = 30;
+	var x1Zoom = 0;
+	var x2Zoom = 5;
+	var updateInterval;
+
+	for (i in chartList){
+		chartID = chartList[i];
+		draw_chart(chartID,data);
+	}
+    // take data and parseDate
+    /*temperatures.forEach(function(d) {
+        d.onDate = parseDate(d.onDate);
+        console.log(d.onDate)
+        return d;
+        })
+    */
+	function draw_chart(chartID,data){
+        //Load any selected specific actions here
+		draw_chart_data(chartID,data);
+	}
+	function draw_chart_data(chartID,data){
+		var dynamicElements = [];
+		
+		var start_pad;
+		var end_pad;
+		// Defaults to viewing the last 50 Timer intervals	
+		
+		yScale = d3.scaleLinear() // TODO: Get max of all stuff
+				.domain([d3.max(data, function(d){return d['TOTAL']})+yZoom,0])//d3.min(data, function(d) {return d['TOTAL']})-yZoom])
+				.range([0,ch_height-10]);
+		xAxisScale = d3.scaleTime()
+		.domain([start_pad,end_pad])
+		.range([padding+20,ch_width]);
+		/*var xScale = d3.scaleLinear()
+				.domain([0,bar_width*data.length])
+				.range([0,ch_width]);*/
+		var chart_area = d3.select("#"+chartID).append("svg")
+			.attr('width', ch_width + ch_marginLeft - ch_marginRight)
+			.attr('height',ch_height - ch_marginTop - ch_marginBottom)
+			.style("background-color", 'LightGray');
+			var interactive_chart = chart_area.append('g')
+			.attr("transform", "translate(" + ch_marginLeft + ","+ch_marginTop + ")")
+		
+		
+		
+
+		// Axis setup
+		var xAxis = d3.axisBottom(xAxisScale)
+				.tickSizeInner([-ch_height])		
+				.tickSizeOuter(0);
+		var xAxis2 = d3.axisBottom(xAxisScale)
+				.tickSizeOuter(0);
+
+		var yAxis =  d3.axisLeft().scale(yScale)
+				.tickSizeInner([-ch_width])		
+				.tickSizeOuter(0)
+				.tickPadding(10)
+				.ticks(9);
+		var yAxis2 =  d3.axisLeft().scale(yScale)
+				.tickSizeOuter(0)
+				.tickPadding(10)
+				.ticks(9);
+		
+		var yGroup = interactive_chart.append("g")
+			     .attr("class", "axis")
+			     .attr("transform", "translate("+(ch_marginLeft+15)+","+-70+")");
+		var xGroup = interactive_chart.append("g")
+			     .attr("class", "axis")
+			     .attr("transform", "translate(-5," + (ch_height-80) + ")");
+	     	xGroup.call(xAxis.scale(xAxisScale));
+		yGroup.call(yAxis.scale(yScale));
+
+		// Drawing the actual chart
+	    drawData(xAxisScale,yScale,transform);
+		function drawData(xz,yz,zoomScale){
+		    var OC_rects = interactive_chart.selectAll(".bars").data(data).enter().append("rect");
+			OC_rects.attr("id","bar")
+			.attr("class","bars")
+			.attr("x", function(d,i) {
+					my_width = bar_width*zoomScale.k
+					return xz(getMonthYear(d)) - (my_width/2);
+			})
+			.attr("y", function(d,i){
+					yPos = 0; // Static standard bar chart
+				return yz(yPos)-(ch_marginBottom +ch_marginTop + padding)
+			})
+		        .attr("width",function(d,i){
+					my_width = bar_width*zoomScale.k
+					return my_width;
+					return xz(getMonthYear(d)) * (bar_width) / xz(getMonthYear(d));
+			})
+			.attr("height", function(d,i){
+					var yDist;
+					yDist = d['TOTAL'];
+					return (Math.abs(yDist));
+			})
+			.attr("fill",function(d,i){
+				fillColor = "#FF4900"
+				return fillColor;
+			})
+			.attr("stroke", function(d,i){
+                var strokeColor = "black";
+				return strokeColor
+			})
+			.attr("stroke-width",2)
+
+		}
+		
+												      
+		// Draw line
+		var mid_line = chart_area.append("line")
+		.attr("x1",0)
+		.attr("x2",ch_width)
+		.attr("y1",1)
+		.attr("y2",1)
+		.attr("stroke","black");
+		
+		var zoomBehaviour = d3.zoom()		
+		.scaleExtent([1/2, 10])
+		.translateExtent([[-40*ch_width, -ch_height*10], [40*ch_width, ch_height * 10]])
+		.on("zoom",zoomed)
+
+		var zoomRect = chart_area.append("rect")
+		    .attr("width", ch_width)
+		    .attr("height", ch_height)
+		    .attr("fill", "none")
+		    .style("pointer-events","none")
+		    .attr("pointer-events", "all")
+
+		chart_area.call(zoomBehaviour);	
+
+		// Chart movement  helper funcitons
+		function adjustOCBars(xz,yz,zoomScale,data){
+			interactive_chart.selectAll('#bar')
+				.attr("x",function(d){
+					my_width = bar_width*zoomScale.k
+					return xz(getMonthYear(d)) - (my_width/2) - bar_padding;
+				})
+				.attr("y", function(d,i){
+					var yPos = 0;
+					
+				return ( yz(yPos)-(ch_marginBottom +ch_marginTop + padding));
+				})
+				.attr("width",function(d,i){
+						my_width = bar_width*zoomScale.k
+						return my_width;
+				})
+				.attr("height", function(d,i){
+					var yDist;
+					yDist = d['TOTAL'];
+					return (Math.abs(yDist));
+				})
+		}
+
+
+		function zoomed(zoomScale) {
+			var xz
+			var yz
+			if (zoomScale == null){
+				xz = d3.event.transform.rescaleX(xAxisScale)
+				yz = d3.event.transform.rescaleY(yScale)
+				zoomScale = d3.event.transform;
+			}else {
+				xz = zoomScale.rescaleX(xAxisScale)
+				yz = zoomScale.rescaleY(yScale)
+			}
+			xGroup.call(xAxis.scale(xz));
+			yGroup.call(yAxis.scale(yz));
+
+		// reposition chart elements ------
+			// HL Lines
+			//adjustHLLines(xz,yz,zoomScale,data);
+			// OC Rects
+			adjustOCBars(xz,yz,zoomScale,data);
+		       // Reposition/draw indicators	
+			//adjustIndicators(xz,yz,zoomScale,data);
+		}
+	}
+
+		      
+	</script>
+
+	</div>
+	{# endraw #}
+	
+{% endblock %}
+

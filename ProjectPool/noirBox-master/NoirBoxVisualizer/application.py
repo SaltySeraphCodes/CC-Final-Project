@@ -4,8 +4,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, SelectField, FloatField, BooleanField,\
     DateField, validators, TextAreaField
 from wtforms.validators import Email, Length, InputRequired, EqualTo, DataRequired, NumberRange, Regexp
-from wtforms.fields.html5 import DateField, IntegerField
-from wtforms.ext.sqlalchemy.fields import QuerySelectField
+#from wtforms.ext.sqlalchemy.fields import QuerySelectField
 
 from flask_wtf.file import FileField, FileRequired
 from werkzeug.utils import secure_filename
@@ -46,34 +45,41 @@ def get_seconds_from_time(time):
 
 @app.before_request
 def before_request():
-    db.open_db_connection()
+    pass
+    #db.open_db_connection()
 
 
 @app.teardown_request
 def teardown_request(exception):
-    db.close_db_connection()
+    #db.close_db_connection()
+    pass
 
 
 @app.route('/', methods=['GET','POST'])
 def index():
+    print("Getting data")
     currency_pairs = []
     interval_options =[]
+    #data = 
+    householdData = db.get_table_panda("households") # Returns dictionary of list of unique tickers and granularities
+    productData = db.get_table_panda("products")
+    print(householdData.head())
+    print()
+    print(productData.head())
 
-    currency_data = db.get_all_pairs_intervals() # Returns dictionary of list of unique tickers and granularities
-
-    currency_pairs = currency_data['tickers']
-    interval_options = currency_data['grans']
+    #currency_pairs = currency_data['tickers']
+    #interval_options = currency_data['grans']
 
 
-    currency = "EUR_USD"
-    interval = "H1"
-    chunk_size= 50
+    #currency = "EUR_USD"
+    #interval = "H1"
+    #chunk_size= 50
     # New Table names:  BroDeuxDemo_EUR_USD_H1
-    table_name = "BroDeuxDemo_"+currency+"_"+interval
-    panda_data = db.get_table_panda(table_name)
+    #table_name = "BroDeuxDemo_"+currency+"_"+interval
+    #panda_data = db.get_table_panda(table_name)
 
-    graph_chunk = panda_data.tail(chunk_size)
-    graph_chunk = graph_chunk.to_json(orient='records')
+    #graph_chunk = panda_data.tail(chunk_size)
+    #graph_chunk = graph_chunk.to_json(orient='records')
     return render_template('index.html', graph_data=graph_chunk, chunk_size=chunk_size,interval=interval,currency=currency,currency_pairs=currency_pairs, intervals=interval_options)
 
 @app.route('/council_results', methods=['GET','POST'])
@@ -167,4 +173,5 @@ def test_debug():
 # ---------TODO: Get SSL context ssl_context=('/etc/letsencrypt/live/tuschedulealerts.com/fullchain.pem', '/etc/letsencrypt/live/tuschedulealerts.com/privkey.pem'----------------------------------
 if '__main__' == __name__:
     #app.run(host='0.0.0.0', port=5000, debug=True) 
-    app.run( host='0.0.0.0',port=5001, debug=True)
+    app.run( host='0.0.0.0',port=5001, debug=True, ssl_context = 'adhoc')
+    #ssl_context=('/Users/canthony/certs/server.cert', '/Users/canthony/certs/server.key')) # or 'adchoc'?

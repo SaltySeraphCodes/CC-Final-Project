@@ -1,27 +1,23 @@
 from flask import g
-import mysql.connector
+#import mysql.connector
 import pandas
 from sqlalchemy import create_engine
-import sqlalchemy
-import dbInfo
-info = dbInfo.getDBInfo('home')
+#import sqlalchemy
+#import dbInfo
+info = {
+'host': 'cloudcomputingfinal.mysql.database.azure.com',
+'user': 'admin1',
+'pswd': 'Cloud2022!',
+'database' :'sample8451'
+}
 host = info['host']
 user = info['user']
 password = info['pswd']
 databse = info['database']
 engine = create_engine('mysql+mysqlconnector://'+user+':'+password+'@'+host+':3306/'+databse, echo=False)
 
-mydb = mysql.connector.connect(
-  host=host,
-  user=user,
-  passwd=password,
-  database=databse
-)
-
-
 def open_db_connection():
-    g.cursor = mydb.cursor()
-    print(g.cursor)
+    pass
 
 def close_db_connection():
     g.cursor.close()
