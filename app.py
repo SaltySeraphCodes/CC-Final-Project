@@ -1,4 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session
+import pymysql  
+pymysql.install_as_MySQLdb()
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 import re
@@ -24,6 +26,11 @@ mysql = MySQL(app)
 @app.route('/')
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
+    print("home")
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM accounts')
+    account = cursor.fetchone()
+    print(account)
     # Output message if something goes wrong...
     msg = ''
     # Check if "username" and "password" POST requests exist (user submitted form)
@@ -100,6 +107,11 @@ def register():
 @app.route('/home/')
 def home():
     # Check if user is loggedin
+    print("home")
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute('SELECT * FROM households')
+    account = cursor.fetchone()
+    print(account)
     if 'loggedin' in session:
         # User is loggedin show them the home page
         return render_template('home.html', username=session['username'])

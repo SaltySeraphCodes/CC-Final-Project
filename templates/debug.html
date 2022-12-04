@@ -1,0 +1,17 @@
+{% extends 'base2.html' %}
+
+{% block content %}
+<br>
+	{# raw #}
+	<script>
+	// Helper Functions ---------------------
+	var data = {{data|safe}};
+    console.log("Got data",data)
+	
+	</script>
+
+	</div>
+	{# endraw #}
+	
+{% endblock %}
+

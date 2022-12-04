@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<br>
+<style>
+
+</style>
+	{# raw #}
+	<div class=container chart_holder>
+		<h2> Household Trends</h2>
+		<div id="chart1"> </div>
+		<br>
+		<h2> Yearly Category Trend</h2>
+		<div id="chart2"> </div>
+	<script>
+	// Helper Functions ---------------------
+	var datetime = {'datetime':function(year,month,day,hour,minute){
+			newDay =  new Date(year,month,day,hour,minute);
+			return newDay;
+			}
+	};
+
+	function epochToDate(epochStr){
+		var epochInt= parseInt(epochStr,10);
+		converted_date = new Date(epochInt);
+		return converted_date;
+	}
+
+	function getMonthYear(d){ // gets purchase month and year
+		let month = d['PURCHASE'] - 1;
+		let year = d['YEAR']
+		date = new Date(year, month)
+		return date;
+	}
+
+
+	function getYear(d){ // only takes year
+		let year = d['YEAR']
+		date = new Date(year, month)
+		return date;
+	}
+
+	function addDays(date, days) {
+	  var result = new Date(date);
+	  result.setDate(result.getDate() + days);
+	  return result;
+	}
+
+	function addHours(date, hours) {
+	  var result = new Date(date);
+	  result = new Date(result.getTime() + (hours*60*60000));
+	  return result;
+	}
+	
+	function addMinutes(date, minutes) {
+	  var result = new Date(date);
+	  result = new Date(result.getTime() + (minutes*60000));
+	  return result;
+	}
+
+	function increaseXScale(ammount,interval){
+		console.lg("increasing xScale by ",ammount,interval)
+	}
+	///------------------HOUSEHOLD TREND CHART-----------
+	var chartID = 'chart1';
+	var data = {{timeData|safe}};
+    console.log("HOusehold data",data)
+	// RENEWED STUFF since old stuff was not working
+	var margin = 34;
+    var width = 1000 - (2 * margin);
+    var height = 400 - (2 * margin);
+	var dynamicElements = [];
+	var start_date = d3.min(data, function(d){return getMonthYear(d)})
+	var end_date = d3.max(data, function(d){return getMonthYear(d)})
+
+	yScale = d3.scaleLinear() // TODO: Get max of all stuff
+		.range([height,60])
+		.domain([0,d3.max(data, function(d){return d['TOTAL']})])//d3.min(data, function(d) {return d['TOTAL']})-yZoom])
+	xScale = d3.scaleTime()
+		.range([0,width -60])
+		.domain([start_date,end_date]) // possibly pad by a week?
+	//.padding(0.2)
+	
+	var chart_area = d3.select("#"+chartID).append("svg")
+		.attr('width', width)
+		.attr('height',height )
+		.style("background-color", 'LightGray');
+		
+		var interactive_chart = chart_area.append('g')
+		.attr('transform', `translate(${margin}, ${margin})`);
+		//.attr("transform", "translate(" + margin + ","+margin + ")") // can use the other one
+	
+
+	interactive_chart.append('g')
+		.attr('transform', `translate(0, ${height - 60})`)
+		.attr("class", "axis")
+		.call(d3.axisBottom(xScale));
+	
+	interactive_chart.append("g")
+		.attr("class", "axis")
+		.attr('transform', `translate(0, -60)`)
+		.call(d3.axisLeft(yScale));
+			
+	// Drawing the actual chart
+	console.log("drawing")
+	var OC_rects = interactive_chart.selectAll(".bars").data(data).enter().append("rect");
+	OC_rects.attr("id","bar")
+	.attr("class","bars")
+	.attr("x", function(d,i) {
+			return xz(getMonthYear(d))
+	})
+	.attr("y", function(d,i){
+			yPos = d['TOTAL'] //d['TOTAL']; // start up top and extend down
+		return yz(yPos) - 60
+	})
+		.attr("width",function(d,i){
+			return bar_width;
+	})
+	.attr("height", function(d,i){
+			var yDist;
+			yDist = d['TOTAL'];
+			return  height - yz(yDist);
+	})
+	.attr("fill",function(d,i){
+		fillColor = "#FF4900"
+		return fillColor;
+	})
+	.attr("stroke", function(d,i){
+		var strokeColor = "black";
+		return strokeColor
+	})
+	.attr("stroke-width",1)
+
+
+	///------------------Category TREND CHART-----------
+	var chartID = 'chart2';
+	var data = {{catData|safe}};
+    console.log("Category data",data)
+	// RENEWED STUFF since old stuff was not working
+	var margin = 34;
+    var width = 1000 - (2 * margin);
+    var height = 400 - (2 * margin);
+	var dynamicElements = [];
+	var start_date = d3.min(data, function(d){return getYear(d)})
+	var end_date = d3.max(data, function(d){return getYear(d)})
+
+	yScale = d3.scaleLinear() // TODO: Get max of all stuff
+		.range([height,60])
+		.domain([0,d3.max(data, function(d){return d['TOTAL']})])//d3.min(data, function(d) {return d['TOTAL']})-yZoom])
+	xScale = d3.scaleTime()
+		.range([0,width -60])
+		.domain([start_date,end_date]) // possibly pad by a week?
+	//.padding(0.2)
+	
+	var chart_area = d3.select("#"+chartID).append("svg")
+		.attr('width', width)
+		.attr('height',height )
+		.style("background-color", 'LightGray');
+		
+		var interactive_chart = chart_area.append('g')
+		.attr('transform', `translate(${margin}, ${margin})`);
+		//.attr("transform", "translate(" + margin + ","+margin + ")") // can use the other one
+	
+
+	interactive_chart.append('g')
+		.attr('transform', `translate(0, ${height - 60})`)
+		.attr("class", "axis")
+		.call(d3.axisBottom(xScale));
+	
+	interactive_chart.append("g")
+		.attr("class", "axis")
+		.attr('transform', `translate(0, -60)`)
+		.call(d3.axisLeft(yScale));
+			
+	// Drawing the actual chart
+	console.log("drawing")
+	var OC_rects = interactive_chart.selectAll(".bars").data(data).enter().append("rect");
+	OC_rects.attr("id","bar")
+	.attr("class","bars")
+	.attr("x", function(d,i) {
+			return xz(getMonthYear(d))
+	})
+	.attr("y", function(d,i){
+			yPos = d['TOTAL'] //d['TOTAL']; // start up top and extend down
+		return yz(yPos) - 60
+	})
+	.attr("width",function(d,i){
+		return bar_width;
+	})
+	.attr("height", function(d,i){
+			var yDist;
+			yDist = d['TOTAL'];
+			return  height - yz(yDist);
+	})
+	.attr("fill",function(d,i){
+		fillColor = "#FF4900"
+		return fillColor;
+	})
+	.attr("stroke", function(d,i){
+		var strokeColor = "black";
+		return strokeColor
+	})
+	.attr("stroke-width",1)
+		      
+	</script>
+
+	</div>
+	{# endraw #}
+	
+{% endblock %}
+
