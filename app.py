@@ -9,12 +9,13 @@ app = Flask(__name__)
 # Change this to your secret key (can be anything, it's for extra protection)
 app.secret_key = 'your secret key'
 
+# cnx = mysql.connector.connect(user="admin1", password="{your_password}", host="cloudcomputingfinal.mysql.database.azure.com", port=3306, database="{your_database}", ssl_ca="{ca-cert filename}", ssl_disabled=False)
 # Enter your database connection details below
 
 app.config['MYSQL_HOST'] = 'cloudcomputingfinal.mysql.database.azure.com'
 app.config['MYSQL_USER'] = 'admin1'
 app.config['MYSQL_PASSWORD'] = 'Cloud2022!'
-app.config['MYSQL_DB'] = 'applogin'
+app.config['MYSQL_DB'] = 'sample8451'
 
 # Intialize MySQL
 mysql = MySQL(app)
