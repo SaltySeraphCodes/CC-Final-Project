@@ -36,7 +36,6 @@ output_db = sqlite3.connect(db_file,check_same_thread=False)
 
 # helperss ------
 def cleanDF(df): # removes duplicate columns from a dataframe can add other cleaning here too
-    print("cleaning df")
     df = df.loc[:,~df.columns.duplicated()].copy()
     return df
     
@@ -131,14 +130,37 @@ def home():
 
 
 def getMonthySpending(df):
-    outPut = pd.DataFrame
     ts = df.groupby([df.PURCHASE.dt.month,'YEAR'], sort = False)['SPEND'].sum().reset_index(name='TOTAL')
     return ts
 
 def getMonthlyGroupSpending(df):
-    print("categorized data")
+    # Drop GROCERY STAPLE
+    df = df[df.COMMODITY != 'GROCERY STAPLE']
     ts = df.groupby(['YEAR','COMMODITY'], sort = True)['SPEND'].sum().reset_index(name='TOTAL')
-    print(ts)
+    #print(ts)
+    return ts
+
+def getHouseholdSizeGroupSpending(df): # can parameterize selected categories
+    selectedCategories = ['ALCOHOL','FROZEN FOOD', 'HOUSEHOLD', 'BABY']
+    df = df[df.HH_SIZE != 'null']
+    ts = df.groupby(['HH_SIZE','COMMODITY'], sort = False)['SPEND'].sum().reset_index(name='TOTAL')
+    demoAnalytics = ts[ts.COMMODITY.isin(selectedCategories) == True]
+    return demoAnalytics
+
+
+def getTransactionGroupAmmount(df):
+    df = df[df.HH_SIZE != 'null']
+    ts = df.groupby(['HH_SIZE'], sort = True).size().reset_index(name='TOTAL')
+    ts['ANCHOR'] = "Household Size"
+    print("TRAN AN",ts)
+    return ts
+
+
+def cleanText(text):
+    text = text.strip()  #strip string and return
+    return text
+
+
 
 @app.route('/debug/')
 def debug():
@@ -146,23 +168,40 @@ def debug():
 
     transactionTimeStatement = '''
         SELECT * from households INNER JOIN transactions ON households.HSHD_NUM = transactions.HSHD_NUM 
-        INNER JOIN products ON transactions.PRODUCT_NUM = products.PRODUCT_NUM LIMIT 200;
+        INNER JOIN products ON transactions.PRODUCT_NUM = products.PRODUCT_NUM;
         '''
 
+   
+    #cols = householdSpecificData.columns 
+    #print("test",householdSpecificData['HH_SIZE'])
+    #print(householdSpecificData)
     transactionData = pd.read_sql_query(transactionTimeStatement,output_db)
+    transactionData['COMMODITY'] = transactionData['COMMODITY'].apply(cleanText) # clean the commodity column
+    transactionData['HH_SIZE'] = transactionData['HH_SIZE'].apply(cleanText) # clean the commodity column
     transactionData['PURCHASE'] = pd.to_datetime(transactionData['PURCHASE'])
     transactionData.sort_values(by=['PURCHASE'], ascending=True)
     transactionData = cleanDF(transactionData)
-    #cols = transactionData.columns 
-    #print(transactionData['SPEND'])
 
     # build analytics data
     analytics = getMonthySpending(transactionData)
     catAnalytics = getMonthlyGroupSpending(transactionData)
+    demoAnalytics = getHouseholdSizeGroupSpending(transactionData)
+    transAnalytics = getTransactionGroupAmmount(transactionData)
+    
+    print()
+    print("AFTER",transAnalytics.head())
+    
     #print(analytics)
-    jsonData = analytics.to_json(orient = 'records')
+    timeJson = analytics.to_json(orient = 'records')
+    categoryJson = catAnalytics.to_json(orient = 'records')
+    uniqueCategories = catAnalytics.COMMODITY.unique().tolist()
+
+    demoJson = demoAnalytics.to_json(orient = 'records')
+    transJson = transAnalytics.to_json(orient= "records")
+
+    
     #pd.read_sql("select * from households",conn)
-    return render_template('dashboard.html', data = jsonData)
+    return render_template('dashboard.html', timeData = timeJson, catData = categoryJson, categories = uniqueCategories, demData = demoJson,transData = transJson)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port='8080')

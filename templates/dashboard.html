@@ -7,11 +7,17 @@
 </style>
 	{# raw #}
 	<div class=container chart_holder>
-		<h2> Household Trends</h2>
+		<h2> Spending by Household Per Month</h2>
 		<div id="chart1"> </div>
 		<br>
-		<h2> Yearly Category Trend</h2>
+		<h2> Spending by Category per Year</h2>
 		<div id="chart2"> </div>
+		<br>
+		<h2>Spending by Household Size per Catergory</h2>
+		<div id="chart3"> </div>
+		<br>
+		<h2>Transactions Per Household Size</h2>
+		<div id="chart4"> </div>
 	<script>
 	// Helper Functions ---------------------
 	var datetime = {'datetime':function(year,month,day,hour,minute){
@@ -36,7 +42,7 @@
 
 	function getYear(d){ // only takes year
 		let year = d['YEAR']
-		date = new Date(year, month)
+		date = new Date(year)
 		return date;
 	}
 
@@ -61,11 +67,13 @@
 	function increaseXScale(ammount,interval){
 		console.lg("increasing xScale by ",ammount,interval)
 	}
+
 	///------------------HOUSEHOLD TREND CHART-----------
 	var chartID = 'chart1';
 	var data = {{timeData|safe}};
     console.log("HOusehold data",data)
 	// RENEWED STUFF since old stuff was not working
+	var bar_width = 15
 	var margin = 34;
     var width = 1000 - (2 * margin);
     var height = 400 - (2 * margin);
@@ -75,10 +83,10 @@
 
 	yScale = d3.scaleLinear() // TODO: Get max of all stuff
 		.range([height,60])
-		.domain([0,d3.max(data, function(d){return d['TOTAL']})])//d3.min(data, function(d) {return d['TOTAL']})-yZoom])
+		.domain([0,d3.max(data, function(d){return d['TOTAL']})])//d3.min(data, function(d) {return d['TOTAL']})-yScaleoom])
 	xScale = d3.scaleTime()
-		.range([0,width -60])
-		.domain([start_date,end_date]) // possibly pad by a week?
+		.range([0,width -65])
+		.domain([start_date,addDays(end_date,25)]) // possibly pad by a week?
 	//.padding(0.2)
 	
 	var chart_area = d3.select("#"+chartID).append("svg")
@@ -87,19 +95,20 @@
 		.style("background-color", 'LightGray');
 		
 		var interactive_chart = chart_area.append('g')
-		.attr('transform', `translate(${margin}, ${margin})`);
+		.attr('transform', `translate(${margin+30}, ${margin})`);
 		//.attr("transform", "translate(" + margin + ","+margin + ")") // can use the other one
 	
-
+	var xAxis1 = d3.axisBottom(xScale).tickSizeOuter(0);
+  	var yAxis1 = d3.axisLeft(yScale).ticks(height / 60, "$.0s");
 	interactive_chart.append('g')
 		.attr('transform', `translate(0, ${height - 60})`)
 		.attr("class", "axis")
-		.call(d3.axisBottom(xScale));
+		.call(xAxis1);
 	
 	interactive_chart.append("g")
 		.attr("class", "axis")
 		.attr('transform', `translate(0, -60)`)
-		.call(d3.axisLeft(yScale));
+		.call(yAxis1);
 			
 	// Drawing the actual chart
 	console.log("drawing")
@@ -107,11 +116,11 @@
 	OC_rects.attr("id","bar")
 	.attr("class","bars")
 	.attr("x", function(d,i) {
-			return xz(getMonthYear(d))
+			return xScale(getMonthYear(d))
 	})
 	.attr("y", function(d,i){
 			yPos = d['TOTAL'] //d['TOTAL']; // start up top and extend down
-		return yz(yPos) - 60
+		return yScale(yPos) - 60
 	})
 		.attr("width",function(d,i){
 			return bar_width;
@@ -119,7 +128,7 @@
 	.attr("height", function(d,i){
 			var yDist;
 			yDist = d['TOTAL'];
-			return  height - yz(yDist);
+			return  height - yScale(yDist);
 	})
 	.attr("fill",function(d,i){
 		fillColor = "#FF4900"
@@ -132,76 +141,194 @@
 	.attr("stroke-width",1)
 
 
-	///------------------Category TREND CHART-----------
+	///------------------Category TREND CHART-------0------------
 	var chartID = 'chart2';
 	var data = {{catData|safe}};
-    console.log("Category data",data)
-	// RENEWED STUFF since old stuff was not working
-	var margin = 34;
-    var width = 1000 - (2 * margin);
-    var height = 400 - (2 * margin);
-	var dynamicElements = [];
-	var start_date = d3.min(data, function(d){return getYear(d)})
-	var end_date = d3.max(data, function(d){return getYear(d)})
+	var categories = {{categories|safe}}
+	years = d3.map(data,function(d) {return d.YEAR; });
+	//console.log("gotyears",years) // Might need uniques
+chart = GroupedBarChart(data, {
+  x: d => d.YEAR,
+  y: d => d.TOTAL,
+  z: d => d.COMMODITY,
+  xDomain: years, //d3.groupSort(data, D => d3.sum(D, d => -d.population), d => d.state).slice(0, 6), // top 6
+  yLabel: "Hover over each bar to view commodity type and value",
+  zDomain: categories,
+  colors: d3.schemeSpectral[categories.length],
+  yFormat: "$.0s",
+  width,
+  height: 500,
+  legendTitle:"Commodities"
+  //title: "Hover over each bar to view commodity type and value!"
+})
 
-	yScale = d3.scaleLinear() // TODO: Get max of all stuff
-		.range([height,60])
-		.domain([0,d3.max(data, function(d){return d['TOTAL']})])//d3.min(data, function(d) {return d['TOTAL']})-yZoom])
-	xScale = d3.scaleTime()
-		.range([0,width -60])
-		.domain([start_date,end_date]) // possibly pad by a week?
-	//.padding(0.2)
-	
-	var chart_area = d3.select("#"+chartID).append("svg")
-		.attr('width', width)
-		.attr('height',height )
-		.style("background-color", 'LightGray');
-		
-		var interactive_chart = chart_area.append('g')
-		.attr('transform', `translate(${margin}, ${margin})`);
-		//.attr("transform", "translate(" + margin + ","+margin + ")") // can use the other one
-	
+// ----------- Demographic hiusehold size and spending Per category ---////
 
-	interactive_chart.append('g')
-		.attr('transform', `translate(0, ${height - 60})`)
-		.attr("class", "axis")
-		.call(d3.axisBottom(xScale));
-	
-	interactive_chart.append("g")
-		.attr("class", "axis")
-		.attr('transform', `translate(0, -60)`)
-		.call(d3.axisLeft(yScale));
-			
-	// Drawing the actual chart
-	console.log("drawing")
-	var OC_rects = interactive_chart.selectAll(".bars").data(data).enter().append("rect");
-	OC_rects.attr("id","bar")
-	.attr("class","bars")
-	.attr("x", function(d,i) {
-			return xz(getMonthYear(d))
-	})
-	.attr("y", function(d,i){
-			yPos = d['TOTAL'] //d['TOTAL']; // start up top and extend down
-		return yz(yPos) - 60
-	})
-	.attr("width",function(d,i){
-		return bar_width;
-	})
-	.attr("height", function(d,i){
-			var yDist;
-			yDist = d['TOTAL'];
-			return  height - yz(yDist);
-	})
-	.attr("fill",function(d,i){
-		fillColor = "#FF4900"
-		return fillColor;
-	})
-	.attr("stroke", function(d,i){
-		var strokeColor = "black";
-		return strokeColor
-	})
-	.attr("stroke-width",1)
-		      
+var chartID = 'chart3';
+	var data = {{demData|safe}};
+	var maxSize = parseInt(d3.max(data, function(d){return d['HH_SIZE']})) + parseInt(1)
+	var houseSizeRange = d3.range(1,maxSize,1)
+	houseSizeRange.forEach((element, index) => {
+		houseSizeRange[index] = element.toString()
+	});
+	var comList = d3.map(data,function(d) {return d.COMMODITY; });
+
+
+chart3 = GroupedBarChart(data, {
+  x: d => d.COMMODITY,
+  y: d => d.TOTAL,
+  z: d => d.HH_SIZE,
+  xDomain: comList, //d3.groupSort(data, D => d3.sum(D, d => -d.population), d => d.state).slice(0, 6), // top 6
+  yLabel: "Hover over each bar to view details",
+  zDomain: houseSizeRange,
+  colors: d3.schemeSpectral[houseSizeRange.length],
+  yFormat: "$.0s",
+  width,
+  height: 500,
+  legendTitle: "Houshold Size"
+})
+
+var chartID = 'chart4';
+	var data = {{transData|safe}};
+	var maxSize = parseInt(d3.max(data, function(d){return d['HH_SIZE']})) + parseInt(1)
+	var houseSizeRange = d3.range(1,maxSize,1)
+	houseSizeRange.forEach((element, index) => {
+		houseSizeRange[index] = element.toString()
+	});
+	var comList = ['Household Size']
+
+
+chart4 = GroupedBarChart(data, {
+  x: d => d.ANCHOR,
+  y: d => d.TOTAL,
+  z: d => d.HH_SIZE,
+  xDomain: comList, //d3.groupSort(data, D => d3.sum(D, d => -d.population), d => d.state).slice(0, 6), // top 6
+  yLabel: "Hover over each bar to view details",
+  zDomain: houseSizeRange,
+  colors: d3.schemeSpectral[houseSizeRange.length],
+  yFormat: ".0s",
+  width,
+  height: 500,
+  legendTitle: "Houshold Size"
+  //title: "Hover over each bar to view commodity type and value!"
+})
+
+function GroupedBarChart(data, {
+
+  x = (d, i) => i, // given d in data, returns the (ordinal) x-value
+  y = d => d, // given d in data, returns the (quantitative) y-value
+  z = () => 1, // given d in data, returns the (categorical) z-value
+  title, // given d in data, returns the title text
+  marginTop = 30, // top margin, in pixels
+  marginRight = 0, // right margin, in pixels
+  marginBottom = 30, // bottom margin, in pixels
+  marginLeft = 40, // left margin, in pixels
+  width = 640, // outer width, in pixels
+  height = 300, // outer height, in pixels
+  xDomain, // array of x-values
+  xRange = [marginLeft, width - marginRight], // [xmin, xmax]
+  xPadding = 0.2, // amount of x-range to reserve to separate groups
+  yType = d3.scaleLinear, // type of y-scale
+  yDomain, // [ymin, ymax]
+  yRange = [height - marginBottom, marginTop], // [ymin, ymax]
+  zDomain, // array of z-values
+  zPadding = 0.05, // amount of x-range to reserve to separate bars
+  yFormat, // a format specifier string for the y-axis
+  yLabel, // a label for the y-axis
+  legendTitle, // Title for legend
+  colors = d3.schemeTableau10, // array of colors
+} = {}) {
+  // Compute values.
+  const X = d3.map(data, x);
+  const Y = d3.map(data, y);
+  const Z = d3.map(data, z);
+  
+  //console.log("map",X,Y,Z)
+
+  // Compute default domains, and unique the x- and z-domains.
+  if (xDomain === undefined) xDomain = X;
+  if (yDomain === undefined) yDomain = [0, d3.max(Y)];
+  if (zDomain === undefined) zDomain = Z;
+  xDomain = new d3.InternSet(xDomain);
+  zDomain = new d3.InternSet(zDomain);
+
+  // Omit any data not present in both the x- and z-domain.
+  const I = d3.range(X.length).filter(i => xDomain.has(X[i]) && zDomain.has(Z[i]));
+
+  // Construct scales, axes, and formats.
+  const xScale = d3.scaleBand(xDomain, xRange).paddingInner(xPadding);
+  const xzScale = d3.scaleBand(zDomain, [0, xScale.bandwidth()]).padding(zPadding);
+  const yScale = yType(yDomain, yRange);
+  const zScale = d3.scaleOrdinal(zDomain, colors);
+  const xAxis = d3.axisBottom(xScale).tickSizeOuter(0);
+  const yAxis = d3.axisLeft(yScale).ticks(height / 60, yFormat);
+
+  // Compute titles.
+  if (title === undefined) {
+    const formatValue = yScale.tickFormat(100, yFormat);
+    title = i => `${X[i]}\n${Z[i]}\n${formatValue(Y[i])}`;
+  } else {
+    const O = d3.map(data, d => d);
+    const T = title;
+    title = i => T(O[i], i, data);
+  }
+
+  const chart_area2 = d3.select("#"+chartID).append("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", [-20, 0, width+60, height+20])
+	  .style("background-color", 'LightGray')
+      .style('max-width', '100%') 
+	  .style('height', 'auto')
+	  .style('height', 'intrinsic');
+	  
+
+	  chart_area2.append("g")
+      .attr("transform", `translate(${marginLeft},0)`)
+      .call(yAxis)
+      .call(g => g.select(".domain").remove())
+      .call(g => g.selectAll(".tick line").clone()
+          .attr("x2", width - marginLeft - marginRight)
+          .attr("stroke-opacity", 0.1))
+      .call(g => g.append("text")
+          .attr("x", 0)
+          .attr("y", 15)
+          .attr("fill", "currentColor")
+          .attr("text-anchor", "start")
+          .text(yLabel));
+
+	console.log(Z.length,zDomain)
+	if (Z.length < 30 ){
+		var legend = d3.legendColor()
+		.scale(zScale)
+		.orient("horizontal")
+		.title(legendTitle);
+
+		chart_area2.append("g")
+		.attr("transform", "translate(500,15)")
+		.call(legend);
+	}
+
+  const bar = chart_area2.append("g")
+    .selectAll("rect")
+    .data(I)
+    .join("rect")
+      .attr("x", i => xScale(X[i]) + xzScale(Z[i]))
+      .attr("y", i => yScale(Y[i]))
+      .attr("width", xzScale.bandwidth())
+      .attr("height", i =>yScale(0) - yScale(Y[i]))
+      .attr("fill", i => zScale(Z[i]));
+
+  if (title) bar.append("title")
+      .text(title);
+
+	  chart_area2.append("g")
+      .attr("transform", `translate(0,${height - marginBottom})`)
+      .call(xAxis);
+
+  return Object.assign(chart_area2.node(), {scales: {color: zScale}});
+}
+
 	</script>
 
 	</div>
