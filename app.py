@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, session
+from flaskext.mysql import MySQL
 import pymysql  
 pymysql.install_as_MySQLdb()
-from flask_mysqldb import MySQL
+from flask_mysqldb import MySQL # this may be an issue, will probably need a different packag such as sqlalchemy
 import MySQLdb.cursors
 import re
 import pandas as pd
@@ -129,6 +130,76 @@ def home():
         return render_template('home.html', username=session['username'])
     # User is not loggedin redirect to login page
     return redirect(url_for('login'))
+
+
+#---------- Dashboard and helpers --------------
+
+def cleanDF(df): # removes duplicate columns from a dataframe can add other cleaning here too
+    df = df.loc[:,~df.columns.duplicated()].copy()
+    return df
+
+def getMonthySpending(df):
+    ts = df.groupby([df.PURCHASE.dt.month,'YEAR'], sort = False)['SPEND'].sum().reset_index(name='TOTAL')
+    return ts
+
+def getMonthlyGroupSpending(df):
+    df = df[df.COMMODITY != 'GROCERY STAPLE'] # jjust too big to make sense
+    ts = df.groupby(['YEAR','COMMODITY'], sort = True)['SPEND'].sum().reset_index(name='TOTAL')
+    return ts
+
+def getHouseholdSizeGroupSpending(df): # can parameterize selected categories
+    selectedCategories = ['ALCOHOL','FROZEN FOOD', 'HOUSEHOLD', 'BABY']
+    df = df[df.HH_SIZE != 'null']
+    ts = df.groupby(['HH_SIZE','COMMODITY'], sort = False)['SPEND'].sum().reset_index(name='TOTAL')
+    demoAnalytics = ts[ts.COMMODITY.isin(selectedCategories) == True]
+    return demoAnalytics
+
+def getTransactionGroupAmmount(df):
+    df = df[df.HH_SIZE != 'null']
+    ts = df.groupby(['HH_SIZE'], sort = True).size().reset_index(name='TOTAL')
+    ts['ANCHOR'] = "Household Size"
+    return ts
+
+def cleanText(text):
+    text = text.strip()  #strip string and return
+    return text
+
+@app.route('/dashboard/')
+def dashboard():
+    print("loading dashboard")
+
+    st = 'SELECT * FROM joined8451 LIMIT 90000;'
+    with engine.connect() as conn, conn.begin():
+        transactionData = pd.read_sql(st,conn)
+    cols = transactionData.columns 
+    transactionData.rename(columns = {'PURCHASE_':'PURCHASE'}, inplace = True)
+    print("got data",cols,transactionData)
+
+    transactionData['COMMODITY'] = transactionData['COMMODITY'].apply(cleanText) # clean the commodity column
+    transactionData['HH_SIZE'] = transactionData['HH_SIZE'].apply(cleanText) # clean the commodity column
+    transactionData['PURCHASE'] = pd.to_datetime(transactionData['PURCHASE'])
+    transactionData.sort_values(by=['PURCHASE'], ascending=True)
+    transactionData = cleanDF(transactionData)
+
+    # build analytics data
+    analytics = getMonthySpending(transactionData)
+    catAnalytics = getMonthlyGroupSpending(transactionData)
+    demoAnalytics = getHouseholdSizeGroupSpending(transactionData)
+    transAnalytics = getTransactionGroupAmmount(transactionData)
+    
+    #print(analytics)
+    timeJson = analytics.to_json(orient = 'records')
+    categoryJson = catAnalytics.to_json(orient = 'records')
+    uniqueCategories = catAnalytics.COMMODITY.unique().tolist()
+
+    demoJson = demoAnalytics.to_json(orient = 'records')
+    transJson = transAnalytics.to_json(orient= "records")
+
+    return render_template('dashboard.html', timeData = timeJson, catData = categoryJson, categories = uniqueCategories, demData = demoJson,transData = transJson)
+
+
+
+
 
 def databaseTest():
     print("running database test")
