@@ -139,7 +139,7 @@ def databaseTest():
     print(data.columns)
     print(data.head())
     
-#databaseTest()
+databaseTest()
 
 if __name__ == "__main__":
-    app.run(debug=True, host ='0.0.0.0')
+    app.run()
