@@ -1,3 +1,8 @@
 venv/*
-/venv/*
-./venv/*
+venv/
+csv_data/
+csv_data/*
+__pycache__/
+__pycache__/*
+ProjectPool/
+sitebuild.zip
