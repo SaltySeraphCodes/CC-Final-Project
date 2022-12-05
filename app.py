@@ -4,7 +4,16 @@ pymysql.install_as_MySQLdb()
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 import re
+import pandas as pd
 
+# adding a new way to connect to db
+from sqlalchemy import create_engine
+
+
+host = 'cloudcomputingfinal.mysql.database.azure.com'
+user = 'admin1'
+password = 'Cloud2022!'
+databse = 'sample8451'
 
 app = Flask(__name__)
 
@@ -21,6 +30,9 @@ app.config['MYSQL_DB'] = 'sample8451'
 
 # Intialize MySQL
 mysql = MySQL(app)
+
+#init sqlaclhemy engine
+engine = create_engine('mysql+mysqlconnector://'+user+':'+password+'@'+host+':3306/'+databse, echo=False)
 
 # http://localhost:5000/login/ - the following will be our login page, which will use both GET and POST requests
 @app.route('/')
@@ -118,5 +130,16 @@ def home():
     # User is not loggedin redirect to login page
     return redirect(url_for('login'))
 
+def databaseTest():
+    print("running database test")
+    st = 'SELECT * FROM joined8451 limit 10'
+    with engine.connect() as conn, conn.begin():
+        data = pd.read_sql(st,conn)
+    
+    print(data.columns)
+    print(data.head())
+    
+databaseTest()
+
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True) #host =0.0.0.0?
