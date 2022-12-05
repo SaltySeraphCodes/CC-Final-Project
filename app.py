@@ -1,10 +1,20 @@
 from flask import Flask, render_template, request, redirect, url_for, session
+from flaskext.mysql import MySQL
 import pymysql  
 pymysql.install_as_MySQLdb()
-from flask_mysqldb import MySQL
+from flask_mysqldb import MySQL # this may be an issue, will probably need a different packag such as sqlalchemy
 import MySQLdb.cursors
 import re
+import pandas as pd
 
+# adding a new way to connect to db
+from sqlalchemy import create_engine
+
+
+host = 'cloudcomputingfinal.mysql.database.azure.com'
+user = 'admin1'
+password = 'Cloud2022!'
+databse = 'sample8451'
 
 app = Flask(__name__)
 
@@ -21,6 +31,9 @@ app.config['MYSQL_DB'] = 'sample8451'
 
 # Intialize MySQL
 mysql = MySQL(app)
+
+#init sqlaclhemy engine
+engine = create_engine('mysql+mysqlconnector://'+user+':'+password+'@'+host+':3306/'+databse, echo=False)
 
 # http://localhost:5000/login/ - the following will be our login page, which will use both GET and POST requests
 @app.route('/')
@@ -137,6 +150,87 @@ def home():
             return render_template('home.html', data=data)
         # User is not loggedin redirect to login page
     return redirect(url_for('login'))
+
+
+#---------- Dashboard and helpers --------------
+
+def cleanDF(df): # removes duplicate columns from a dataframe can add other cleaning here too
+    df = df.loc[:,~df.columns.duplicated()].copy()
+    return df
+
+def getMonthySpending(df):
+    ts = df.groupby([df.PURCHASE.dt.month,'YEAR'], sort = False)['SPEND'].sum().reset_index(name='TOTAL')
+    return ts
+
+def getMonthlyGroupSpending(df):
+    df = df[df.COMMODITY != 'GROCERY STAPLE'] # jjust too big to make sense
+    ts = df.groupby(['YEAR','COMMODITY'], sort = True)['SPEND'].sum().reset_index(name='TOTAL')
+    return ts
+
+def getHouseholdSizeGroupSpending(df): # can parameterize selected categories
+    selectedCategories = ['ALCOHOL','FROZEN FOOD', 'HOUSEHOLD', 'BABY']
+    df = df[df.HH_SIZE != 'null']
+    ts = df.groupby(['HH_SIZE','COMMODITY'], sort = False)['SPEND'].sum().reset_index(name='TOTAL')
+    demoAnalytics = ts[ts.COMMODITY.isin(selectedCategories) == True]
+    return demoAnalytics
+
+def getTransactionGroupAmmount(df):
+    df = df[df.HH_SIZE != 'null']
+    ts = df.groupby(['HH_SIZE'], sort = True).size().reset_index(name='TOTAL')
+    ts['ANCHOR'] = "Household Size"
+    return ts
+
+def cleanText(text):
+    text = text.strip()  #strip string and return
+    return text
+
+@app.route('/dashboard/')
+def dashboard():
+    print("loading dashboard")
+
+    st = 'SELECT * FROM joined8451 LIMIT 90000;'
+    with engine.connect() as conn, conn.begin():
+        transactionData = pd.read_sql(st,conn)
+    cols = transactionData.columns 
+    transactionData.rename(columns = {'PURCHASE_':'PURCHASE'}, inplace = True)
+    print("got data",cols,transactionData)
+
+    transactionData['COMMODITY'] = transactionData['COMMODITY'].apply(cleanText) # clean the commodity column
+    transactionData['HH_SIZE'] = transactionData['HH_SIZE'].apply(cleanText) # clean the commodity column
+    transactionData['PURCHASE'] = pd.to_datetime(transactionData['PURCHASE'])
+    transactionData.sort_values(by=['PURCHASE'], ascending=True)
+    transactionData = cleanDF(transactionData)
+
+    # build analytics data
+    analytics = getMonthySpending(transactionData)
+    catAnalytics = getMonthlyGroupSpending(transactionData)
+    demoAnalytics = getHouseholdSizeGroupSpending(transactionData)
+    transAnalytics = getTransactionGroupAmmount(transactionData)
+    
+    #print(analytics)
+    timeJson = analytics.to_json(orient = 'records')
+    categoryJson = catAnalytics.to_json(orient = 'records')
+    uniqueCategories = catAnalytics.COMMODITY.unique().tolist()
+
+    demoJson = demoAnalytics.to_json(orient = 'records')
+    transJson = transAnalytics.to_json(orient= "records")
+
+    return render_template('dashboard.html', timeData = timeJson, catData = categoryJson, categories = uniqueCategories, demData = demoJson,transData = transJson)
+
+
+
+
+
+def databaseTest():
+    print("running database test")
+    st = 'SELECT * FROM joined8451 limit 10'
+    with engine.connect() as conn, conn.begin():
+        data = pd.read_sql(st,conn)
+    
+    print(data.columns)
+    print(data.head())
+    
+databaseTest()
 
 if __name__ == "__main__":
     app.run()
