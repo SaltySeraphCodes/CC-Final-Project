@@ -49,9 +49,20 @@ def login():
             session['loggedin'] = True
             session['id'] = account['id']
             session['username'] = account['username']
-            msg = 'Logged in successfully!'
+            cursor.execute(
+                "SELECT t.HSHD_NUM, t.BASKET_NUM, t.PURCHASE_ AS PURCHASE_DATE, t.PRODUCT_NUM, p.DEPARTMENT, p.COMMODITY, t.SPEND, t.UNITS, t.STORE_R AS STORE_REGION, t.WEEK_NUM, t.YEAR, h.L AS LOYALTY, h.AGE_RANGE, h.MARITAL AS MARITAL_STATUS, h.INCOME_RANGE, h.HOMEOWNER, h.HSHD_COMPOSITION, h.HH_SIZE AS HSHD_SIZE, h.CHILDREN \
+                FROM transactions AS t \
+                INNER JOIN products AS p ON t.PRODUCT_NUM = p.PRODUCT_NUM \
+                INNER JOIN ( \
+                    SELECT CAST(HSHD_NUM AS SIGNED INTEGER) AS HSHD_NUM, L, AGE_RANGE, MARITAL, INCOME_RANGE, HOMEOWNER, HSHD_COMPOSITION, HH_SIZE, CHILDREN \
+                    FROM households \
+                ) AS h ON t.HSHD_NUM = h.HSHD_NUM \
+                WHERE t.HSHD_NUM = 10 \
+                ORDER BY t.HSHD_NUM, t.BASKET_NUM, PURCHASE_DATE, t.PRODUCT_NUM, p.DEPARTMENT, p.COMMODITY"
+            )
+            data = cursor.fetchall()
             # Redirect to home page
-            return render_template('home.html', msg = msg)
+            return render_template('home.html', data=data)
         else:
             # Account doesnt exist or username/password incorrect
             msg = 'Incorrect username/password!'
@@ -104,18 +115,27 @@ def register():
     return render_template('register.html', msg=msg)
 
 # http://localhost:5000/home - this will be the home page, only accessible for loggedin users
-@app.route('/home/')
+@app.route('/home/', methods=['GET', 'POST'])
 def home():
-    # Check if user is loggedin
-    print("home")
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    cursor.execute('SELECT * FROM households')
-    account = cursor.fetchone()
-    print(account)
-    if 'loggedin' in session:
-        # User is loggedin show them the home page
-        return render_template('home.html', username=session['username'])
-    # User is not loggedin redirect to login page
+    if request.method == 'POST' and 'hshd_num' in request.form:
+        hshd_num = request.form['hshd_num']
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(
+            f"SELECT t.HSHD_NUM, t.BASKET_NUM, t.PURCHASE_ AS PURCHASE_DATE, t.PRODUCT_NUM, p.DEPARTMENT, p.COMMODITY, t.SPEND, t.UNITS, t.STORE_R AS STORE_REGION, t.WEEK_NUM, t.YEAR, h.L AS LOYALTY, h.AGE_RANGE, h.MARITAL AS MARITAL_STATUS, h.INCOME_RANGE, h.HOMEOWNER, h.HSHD_COMPOSITION, h.HH_SIZE AS HSHD_SIZE, h.CHILDREN \
+            FROM transactions AS t \
+            INNER JOIN products AS p ON t.PRODUCT_NUM = p.PRODUCT_NUM \
+            INNER JOIN ( \
+                SELECT CAST(HSHD_NUM AS SIGNED INTEGER) AS HSHD_NUM, L, AGE_RANGE, MARITAL, INCOME_RANGE, HOMEOWNER, HSHD_COMPOSITION, HH_SIZE, CHILDREN \
+                FROM households \
+            ) AS h ON t.HSHD_NUM = h.HSHD_NUM \
+            WHERE t.HSHD_NUM = {hshd_num} \
+            ORDER BY t.HSHD_NUM, t.BASKET_NUM, PURCHASE_DATE, t.PRODUCT_NUM, p.DEPARTMENT, p.COMMODITY"
+        )
+        data = cursor.fetchall()
+        if 'loggedin' in session:
+            # User is loggedin show them the home page
+            return render_template('home.html', data=data)
+        # User is not loggedin redirect to login page
     return redirect(url_for('login'))
 
 if __name__ == "__main__":

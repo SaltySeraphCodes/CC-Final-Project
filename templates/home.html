@@ -1,19 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>User Account</title>
-    <link rel="stylesheet" href="../static/style.css">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.1/css/all.css">
-</head>
-<body>
-<div class="container">
-    <div class="row">
-        <h1>Home</h1>
-    </div>
-    <br>
-    <div class="row">Logged in : {{session.username}} | <a href="{{ url_for('logout') }}"> Logout</a></div>
-    <br><br>
-</div>
-</body>
+    <head>
+        <meta charset="UTF-8" />
+        <title>User Account</title>
+        <link rel="stylesheet" href="../static/style.css" />
+        <link
+            rel="stylesheet"
+            href="https://use.fontawesome.com/releases/v5.7.1/css/all.css"
+        />
+    </head>
+    <body>
+        <div class="container">
+            <div class="row">
+                <h1>Home</h1>
+            </div>
+            <br />
+            <div class="row">
+                Logged in : {{session.username}} |
+                <a href="{{ url_for('logout') }}"> Logout</a>
+            </div>
+            <br /><br />
+            <div style="height: 500px; overflow: auto">
+                <table
+                    class="data-pull-table"
+                    style="
+                        background-color: white;
+                        border: 1px solid;
+                        border-collapse: collapse;
+                        width: 90%;
+                        margin: 0 auto;
+                    "
+                >
+                    <thead>
+                        <tr style="border: 1px solid">
+                            {% for key in data[0] %}
+                            <th
+                                class="table-header"
+                                style="
+                                    font-size: x-small;
+                                    position: sticky;
+                                    top: 0;
+                                    z-index: 1;
+                                    background-color: lightgray;
+                                    box-shadow: inset 1px 1px black;
+                                "
+                            >
+                                {{key}}
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data %}
+                        <tr style="border: 1px solid">
+                            {% for key in row %}
+                            <td
+                                class="table-entry"
+                                style="
+                                    font-size: x-small;
+                                    color: black;
+                                    border: 1px solid;
+                                "
+                            >
+                                {{row[key]}}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <br />
+            <form action="{{ url_for('home') }}" method="post">
+                <label for="hshd_num">Enter HSHD_NUM:</label>
+                <input
+                    type="text"
+                    name="hshd_num"
+                    placeholder="10"
+                    id="hshd_num"
+                    required
+                />
+                <input type="submit" />
+            </form>
+        </div>
+    </body>
 </html>
