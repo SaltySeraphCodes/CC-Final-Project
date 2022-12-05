@@ -188,12 +188,12 @@ def cleanText(text):
 def dashboard():
     print("loading dashboard")
 
-    st = 'SELECT * FROM joined8451 LIMIT 90000;'
+    st = 'SELECT PURCHASE_, COMMODITY, HH_SIZE, YEAR, SPEND FROM joined8451;' #Just grab analyzed Data
     with engine.connect() as conn, conn.begin():
         transactionData = pd.read_sql(st,conn)
     cols = transactionData.columns 
     transactionData.rename(columns = {'PURCHASE_':'PURCHASE'}, inplace = True)
-    print("got data",cols,transactionData)
+    print("got data",cols)
 
     transactionData['COMMODITY'] = transactionData['COMMODITY'].apply(cleanText) # clean the commodity column
     transactionData['HH_SIZE'] = transactionData['HH_SIZE'].apply(cleanText) # clean the commodity column

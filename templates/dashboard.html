@@ -65,13 +65,11 @@
 	}
 
 	function increaseXScale(ammount,interval){
-		console.lg("increasing xScale by ",ammount,interval)
 	}
 
 	///------------------HOUSEHOLD TREND CHART-----------
 	var chartID = 'chart1';
 	var data = {{timeData|safe}};
-    console.log("HOusehold data",data)
 	// RENEWED STUFF since old stuff was not working
 	var bar_width = 15
 	var margin = 34;
@@ -111,7 +109,6 @@
 		.call(yAxis1);
 			
 	// Drawing the actual chart
-	console.log("drawing")
 	var OC_rects = interactive_chart.selectAll(".bars").data(data).enter().append("rect");
 	OC_rects.attr("id","bar")
 	.attr("class","bars")
@@ -146,7 +143,6 @@
 	var data = {{catData|safe}};
 	var categories = {{categories|safe}}
 	years = d3.map(data,function(d) {return d.YEAR; });
-	//console.log("gotyears",years) // Might need uniques
 chart = GroupedBarChart(data, {
   x: d => d.YEAR,
   y: d => d.TOTAL,
@@ -163,14 +159,10 @@ chart = GroupedBarChart(data, {
 })
 
 // ----------- Demographic hiusehold size and spending Per category ---////
-
+var houseSizeRange = ['1','2','3','4','5+'] //d3.range(1,maxSize,1)
 var chartID = 'chart3';
 	var data = {{demData|safe}};
 	var maxSize = parseInt(d3.max(data, function(d){return d['HH_SIZE']})) + parseInt(1)
-	var houseSizeRange = d3.range(1,maxSize,1)
-	houseSizeRange.forEach((element, index) => {
-		houseSizeRange[index] = element.toString()
-	});
 	var comList = d3.map(data,function(d) {return d.COMMODITY; });
 
 
@@ -190,11 +182,12 @@ chart3 = GroupedBarChart(data, {
 
 var chartID = 'chart4';
 	var data = {{transData|safe}};
-	var maxSize = parseInt(d3.max(data, function(d){return d['HH_SIZE']})) + parseInt(1)
-	var houseSizeRange = d3.range(1,maxSize,1)
-	houseSizeRange.forEach((element, index) => {
-		houseSizeRange[index] = element.toString()
-	});
+	var maxSize = parseInt(d3.max(data, function(d){
+		console.log(d['HH_SIZE'])
+		
+		return d['HH_SIZE']})) + parseInt(1)
+	//var houseSizeRange = ['1','2','3','4','5+'] //d3.range(1,maxSize,1) // [
+	//houseSizeRange.forEach((element, index) => {houseSizeRange[index] = element.toString()}); // convert to string if num
 	var comList = ['Household Size']
 
 
@@ -243,7 +236,6 @@ function GroupedBarChart(data, {
   const Y = d3.map(data, y);
   const Z = d3.map(data, z);
   
-  //console.log("map",X,Y,Z)
 
   // Compute default domains, and unique the x- and z-domains.
   if (xDomain === undefined) xDomain = X;
@@ -297,7 +289,6 @@ function GroupedBarChart(data, {
           .attr("text-anchor", "start")
           .text(yLabel));
 
-	console.log(Z.length,zDomain)
 	if (Z.length < 30 ){
 		var legend = d3.legendColor()
 		.scale(zScale)
