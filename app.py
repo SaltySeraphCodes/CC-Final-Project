@@ -278,7 +278,7 @@ def cleanText(text):
 def dashboard():
     print("loading dashboard")
 
-    st = 'SELECT PURCHASE_, COMMODITY, HH_SIZE, YEAR, SPEND FROM joined8451;' #Just grab analyzed Data
+    st = 'SELECT PURCHASE_, COMMODITY, HH_SIZE, YEAR, SPEND FROM joined8451 LIMIT 30000;' #Just grab analyzed Data
     with engine.connect() as conn, conn.begin():
         transactionData = pd.read_sql(st,conn)
     cols = transactionData.columns 
