@@ -7,4 +7,3 @@ __pycache__/*
 ProjectPool/
 sitebuild.zip
 .DS_Store
-static/files/*
