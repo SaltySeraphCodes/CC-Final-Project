@@ -39,6 +39,24 @@ mysql = MySQL(app)
 #init sqlaclhemy engine
 engine = create_engine('mysql+mysqlconnector://'+user+':'+password+'@'+host+':3306/'+databse, echo=False)
 
+
+def gethshData(): # get household data
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    cursor.execute(
+                "SELECT t.HSHD_NUM, t.BASKET_NUM, t.PURCHASE_ AS PURCHASE_DATE, t.PRODUCT_NUM, p.DEPARTMENT, p.COMMODITY, t.SPEND, t.UNITS, t.STORE_R AS STORE_REGION, t.WEEK_NUM, t.YEAR, h.L AS LOYALTY, h.AGE_RANGE, h.MARITAL AS MARITAL_STATUS, h.INCOME_RANGE, h.HOMEOWNER, h.HSHD_COMPOSITION, h.HH_SIZE AS HSHD_SIZE, h.CHILDREN \
+                FROM transactions AS t \
+                INNER JOIN products AS p ON t.PRODUCT_NUM = p.PRODUCT_NUM \
+                INNER JOIN ( \
+                    SELECT CAST(HSHD_NUM AS SIGNED INTEGER) AS HSHD_NUM, L, AGE_RANGE, MARITAL, INCOME_RANGE, HOMEOWNER, HSHD_COMPOSITION, HH_SIZE, CHILDREN \
+                    FROM households \
+                ) AS h ON t.HSHD_NUM = h.HSHD_NUM \
+                WHERE t.HSHD_NUM = 10 \
+                ORDER BY t.HSHD_NUM, t.BASKET_NUM, PURCHASE_DATE, t.PRODUCT_NUM, p.DEPARTMENT, p.COMMODITY"
+            )
+    data = cursor.fetchall()
+    cursor.close()
+    return data
+
 # http://localhost:5000/login/ - the following will be our login page, which will use both GET and POST requests
 @app.route('/')
 @app.route('/login/', methods=['GET', 'POST'])
@@ -134,6 +152,8 @@ def register():
 # http://localhost:5000/home - this will be the home page, only accessible for loggedin users
 @app.route('/home/', methods=['GET', 'POST'])
 def home():
+    #print("yo",request.method)
+    data = [] # placeholder for data
     if request.method == 'POST':
         if 'hshd_num' in request.form:
             if not session['new_data']:
@@ -152,6 +172,7 @@ def home():
                 )
                 data = cursor.fetchall()
                 print(data[0])
+                print("Checking login1")
                 if 'loggedin' in session:
                     # User is loggedin show them the home page
                     return render_template('home.html', data=data)
@@ -170,7 +191,7 @@ def home():
                     ORDER BY t.HSHD_NUM, t.BASKET_NUM, PURCHASE_DATE, t.PRODUCT_NUM, p.DEPARTMENT, p.COMMODITY"
                 )
                 data = cursor.fetchall()
-                print(data[0])
+                #print(data[0])
                 if 'loggedin' in session:
                     # User is loggedin show them the home page
                     return render_template('home.html', data=data)
@@ -219,11 +240,14 @@ def home():
                 ORDER BY t.HSHD_NUM, t.BASKET_NUM, PURCHASE_DATE, t.PRODUCT_NUM, p.DEPARTMENT, p.COMMODITY"
             )
             data = cursor.fetchall()
-
-            if 'loggedin' in session:
-                # User is loggedin show them the home page
-                return render_template('home.html', data=data)
+    else:
+        data = gethshData() # Grab default data
+    
+    if 'loggedin' in session: #moved this outside of the if staments seems like data isnt called
+        # User is loggedin show them the home page
+        return render_template('home.html', data=data)
     # User is not loggedin redirect to login page
+    print("Not logged in?",session)
     return redirect(url_for('login'))
 
 def saveAndGetDF(fileString):
@@ -242,7 +266,7 @@ def clearData():
     cursor.execute('DELETE FROM new_products')
 
 
-#---------- Dashboard and helpers --------------
+#---------- Dashboard and helpers ----------------
 
 def cleanDF(df): # removes duplicate columns from a dataframe can add other cleaning here too
     df = df.loc[:,~df.columns.duplicated()].copy()
@@ -274,22 +298,27 @@ def cleanText(text):
     text = text.strip()  #strip string and return
     return text
 
+
+def getAnalyticDataFromDB():
+    statement = 'SELECT PURCHASE_, COMMODITY, HH_SIZE, YEAR, SPEND FROM joined8451 LIMIT 30000;' #Just grab analyzed Data
+    with engine.connect() as conn, conn.begin():
+        transactionData = pd.read_sql(statement,conn)
+    return transactionData
+
+
 @app.route('/dashboard/')
 def dashboard():
-    print("loading dashboard")
-
-    st = 'SELECT PURCHASE_, COMMODITY, HH_SIZE, YEAR, SPEND FROM joined8451 LIMIT 30000;' #Just grab analyzed Data
-    with engine.connect() as conn, conn.begin():
-        transactionData = pd.read_sql(st,conn)
+    print("loading dashboard",session)
+    transactionData = getAnalyticDataFromDB()   # just assumes there will be data, no error checking
     cols = transactionData.columns 
-    transactionData.rename(columns = {'PURCHASE_':'PURCHASE'}, inplace = True)
+    transactionData.rename(columns = {'PURCHASE_':'PURCHASE'}, inplace = True) # raname dirty columns
     print("got data",cols)
 
     transactionData['COMMODITY'] = transactionData['COMMODITY'].apply(cleanText) # clean the commodity column
     transactionData['HH_SIZE'] = transactionData['HH_SIZE'].apply(cleanText) # clean the commodity column
     transactionData['PURCHASE'] = pd.to_datetime(transactionData['PURCHASE'])
     transactionData.sort_values(by=['PURCHASE'], ascending=True)
-    transactionData = cleanDF(transactionData)
+    transactionData = cleanDF(transactionData) # cleans any duplicate columns (Uneccesary with new sql statement)
 
     # build analytics data
     analytics = getMonthySpending(transactionData)
@@ -306,10 +335,6 @@ def dashboard():
     transJson = transAnalytics.to_json(orient= "records")
 
     return render_template('dashboard.html', timeData = timeJson, catData = categoryJson, categories = uniqueCategories, demData = demoJson,transData = transJson)
-
-
-
-
 
 def databaseTest():
     print("running database test")

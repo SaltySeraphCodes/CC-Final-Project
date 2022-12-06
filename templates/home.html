@@ -1,25 +1,37 @@
 {% extends 'base.html' %} {% block title %}Homel{% endblock %} {% block content
 %}
 <div class="container">
-    <div class="row">
-        <h1>Home</h1>
-    </div>
-    <br />
-    <div class="row">
+    <div class="logoutSection">
         Logged in : {{session.username}} |
-        <a href="{{ url_for('logout') }}"> Logout</a>
         <button
             type="button"
-            class="btn btn-secondary btn-block float-botom"
-            onclick="window.location.href='{{ url_for('dashboard') }}';"
+            class="btn btn-secondary btn-sm"
+            onclick="window.location.href='{{ url_for('logout') }}'"
         >
-            Analytics Dashboard
+            Logout
         </button>
+    </div>
+    <div class="row">
+        <h1>Home</h1>
+        
+    </div>
+    
+    <button
+    type="button"
+    class="btn btn-primary btn-block float-botom"
+    onclick="window.location.href='{{ url_for('dashboard') }}';"
+    >
+    View Analytics Dashboard
+    </button>
+    <br>
+
+    <div class="row">
         <form
             action="{{ url_for('home') }}"
             method="post"
             enctype="multipart/form-data"
         >
+        <div class="form-group">
             <div class="col-sm">
                 <label for="h_file">Upload households file:</label>
                 <input type="file" name="h_file" id="h_file" required />
@@ -32,7 +44,8 @@
                 <label for="p_file">Upload products file:</label>
                 <input type="file" name="p_file" id="p_file" required />
             </div>
-            <input type="submit" value="Upload Files" />
+            <button type="submit" class="btn btn-success btn-sm btn-block">Upload And View</button>
+        </div>
         </form>
     </div>
     <br /><br />
