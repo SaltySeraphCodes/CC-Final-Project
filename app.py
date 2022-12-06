@@ -95,6 +95,7 @@ def login():
                 ORDER BY t.HSHD_NUM, t.BASKET_NUM, PURCHASE_DATE, t.PRODUCT_NUM, p.DEPARTMENT, p.COMMODITY"
             )
             data = cursor.fetchall()
+            cursor.close()
             # Redirect to home page
             return render_template('home.html', data=data)
         else:
@@ -142,6 +143,7 @@ def register():
             # Account doesnt exists and the form data is valid, now insert new account into accounts table
             cursor.execute('INSERT INTO accounts VALUES (NULL, %s, %s, %s)', (username, password, email,))
             mysql.connection.commit()
+            cursor.close()
             msg = 'You have successfully registered!'
     elif request.method == 'POST':
         # Form is empty... (no POST data)
@@ -171,6 +173,7 @@ def home():
                     ORDER BY t.HSHD_NUM, t.BASKET_NUM, PURCHASE_DATE, t.PRODUCT_NUM, p.DEPARTMENT, p.COMMODITY"
                 )
                 data = cursor.fetchall()
+                cursor.close()
                 if len(data) == 0:
                     print("hh num not found")
                     flash("household number '"+str(hshd_num)+"' not found")
@@ -195,6 +198,7 @@ def home():
                     ORDER BY t.HSHD_NUM, t.BASKET_NUM, PURCHASE_DATE, t.PRODUCT_NUM, p.DEPARTMENT, p.COMMODITY"
                 )
                 data = cursor.fetchall()
+                cursor.close()
                 if len(data) == 0:
                     print("hhs number not found")
                     flash("household number '"+str(hshd_num)+"' not found")
@@ -282,6 +286,7 @@ def clearData():
     cursor.execute('DELETE FROM new_households')
     cursor.execute('DELETE FROM new_transactions')
     cursor.execute('DELETE FROM new_products')
+    cursor.close()
 
 
 #---------- Dashboard and helpers ----------------
