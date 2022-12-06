@@ -48,8 +48,15 @@
         </div>
         </form>
     </div>
-    <br /><br />
-    <div style="height: 500px; overflow: auto">
+    <br>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+   {% for message in messages %}
+      {{ message }}
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+    <div style="height: auto; max-height: 400px; overflow: auto">
         <table
             class="data-pull-table"
             style="
@@ -100,6 +107,7 @@
         </table>
     </div>
     <br />
+    
     <form action="{{ url_for('home') }}" method="post">
         <label for="hshd_num">Enter HSHD_NUM:</label>
         <input
@@ -109,7 +117,7 @@
             id="hshd_num"
             required
         />
-        <input type="submit" />
+        <button type="submit" class="btn btn-primary btn-sm">Search</button>
     </form>
 </div>
 {% endblock %}

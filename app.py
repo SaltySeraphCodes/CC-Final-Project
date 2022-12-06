@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 #from flaskext.mysql import MySQL
 import pymysql  
 pymysql.install_as_MySQLdb()
@@ -171,8 +171,12 @@ def home():
                     ORDER BY t.HSHD_NUM, t.BASKET_NUM, PURCHASE_DATE, t.PRODUCT_NUM, p.DEPARTMENT, p.COMMODITY"
                 )
                 data = cursor.fetchall()
-                print(data[0])
-                print("Checking login1")
+                if len(data) == 0:
+                    print("hh num not found")
+                    flash("household number '"+str(hshd_num)+"' not found")
+                else:
+                    flash('')
+
                 if 'loggedin' in session:
                     # User is loggedin show them the home page
                     return render_template('home.html', data=data)
@@ -191,7 +195,12 @@ def home():
                     ORDER BY t.HSHD_NUM, t.BASKET_NUM, PURCHASE_DATE, t.PRODUCT_NUM, p.DEPARTMENT, p.COMMODITY"
                 )
                 data = cursor.fetchall()
-                #print(data[0])
+                if len(data) == 0:
+                    print("hhs number not found")
+                    flash("household number '"+str(hshd_num)+"' not found")
+                else:
+                    flash('')
+
                 if 'loggedin' in session:
                     # User is loggedin show them the home page
                     return render_template('home.html', data=data)
@@ -240,8 +249,17 @@ def home():
                 ORDER BY t.HSHD_NUM, t.BASKET_NUM, PURCHASE_DATE, t.PRODUCT_NUM, p.DEPARTMENT, p.COMMODITY"
             )
             data = cursor.fetchall()
+            cursor.close()
+
+            if len(data) == 0:
+                print("Please choose a valid household number")
+                flash('Please choose a valid household number')
+            else:
+                flash('')
+
     else:
         data = gethshData() # Grab default data
+
     
     if 'loggedin' in session: #moved this outside of the if staments seems like data isnt called
         # User is loggedin show them the home page
@@ -348,4 +366,4 @@ def databaseTest():
 databaseTest()
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=False)
