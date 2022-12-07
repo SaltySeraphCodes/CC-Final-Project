@@ -36,10 +36,6 @@ app.config['UPLOAD_FOLDER'] = 'static/files'
 # Intialize MySQL
 mysql = MySQL(app)
 
-#init sqlaclhemy engine
-engine = create_engine('mysql+mysqlconnector://'+user+':'+password+'@'+host+':3306/'+databse, echo=False)
-
-
 def gethshData(): # get household data
     cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
     cursor.execute(
@@ -323,9 +319,13 @@ def cleanText(text):
 
 
 def getAnalyticDataFromDB():
+    #init sqlaclhemy engine
+    engine = create_engine('mysql+mysqlconnector://'+user+':'+password+'@'+host+':3306/'+databse, echo=False)
     statement = 'SELECT PURCHASE_, COMMODITY, HH_SIZE, YEAR, SPEND FROM joined8451 LIMIT 30000;' #Just grab analyzed Data
-    with engine.connect() as conn, conn.begin():
+    with engine.connect() as conn:
         transactionData = pd.read_sql(statement,conn)
+
+    
     return transactionData
 
 
@@ -361,12 +361,6 @@ def dashboard():
 
 def databaseTest():
     print("running database test")
-    st = 'SELECT * FROM joined8451 limit 10'
-    with engine.connect() as conn, conn.begin():
-        data = pd.read_sql(st,conn)
-    
-    print(data.columns)
-    print(data.head())
     
 databaseTest()
 
